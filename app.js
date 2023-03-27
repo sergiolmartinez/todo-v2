@@ -4,6 +4,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const _ = require("lodash");
+
+mongoose.set('strictQuery', false);
+
 
 const app = express();
 
@@ -70,30 +74,37 @@ const defaultItems = [item1, item2, item3];
       .catch(err => console.log(err));
   });
 
-  app.get("/:customListName", function(req, res) {
-    const customListName = req.params.customListName;
-
-    List.findOne({name: customListName})
-    .then(foundList => {
-      if (!foundList) {
-        const list = new List({
-          name: customListName,
-          items: defaultItems
-        });
-        return list.save();
-      } else {
-        return foundList;
-      }
-    })
-    .then(foundList => {
-      // show an existing list
-      res.render("list", {
-        listTitle: foundList.name,
-        newListItems: foundList.items
-      });
-    })
-    .catch(err => console.log(err));
+  app.get('/favicon.ico', function(req, res) {
+    res.status(204);
+    res.end();
 });
+
+//   app.get("/:customListName", async function(req, res) {
+//     const customListName = _.capitalize(req.params.customListName);
+ 
+//     await List.findOne({ name: customListName })
+//       .then(async function (foundList) {
+//         if (!foundList) {
+//           //create new list
+//           const list = new List({
+//             name: customListName,
+//             items: defaultItems,
+//           });
+   
+//           await list.save();
+//           res.redirect("/" + customListName);
+//         } else {
+//           //show an existing list
+//           res.render("list", {
+//             listTitle: foundList.name,
+//             newListItems: foundList.items,
+//           });
+//         }
+//       })
+//       .catch(function (err) {
+//         console.log(err);
+//       });
+// });
     
 
 app.post("/", function(req, res){
@@ -120,21 +131,80 @@ app.post("/", function(req, res){
     )};
 });
 
-app.post("/delete", function (req,res) {
-  const checkedItemId = req.body.checkbox;
-  Item.findByIdAndRemove(checkedItemId).then(function(err) {
-    if(!err) {
-      console.log("Successfully deleted checked item.")
-    }
-  }).then(function(err) {
-    if(!err) {
+// Define a route for handling POST requests to the "/delete" URL.
+// The request body contains the ID of the item to be deleted from a list.
+app.post("/delete", function(req,res){
+ 
+  // Extract the ID of the item to be deleted from the request body.
+  const checkedItemId= req.body.checkbox;
+ 
+  // Extract the name of the list where the item to be deleted belongs from the request body.
+  const listName = req.body.list;
+ 
+  // Print the name of the list to the console for debugging purposes.
+  console.log("the list name is: " + listName);
+ 
+  // If the list name is "Today", remove the item from the database and redirect to the home page.
+  // Otherwise, find the corresponding list in the database and remove the item from it.
+  if (listName === "Today") {
+    Item.findByIdAndRemove(checkedItemId)
+    .then(() =>{
+      console.log("We have removed the item with id: " + checkedItemId);
       res.redirect("/");
-    }
-  })
-    .catch(err => console.log(err))
-})
+    })
+    .catch(err => {
+      console.log(err);
+    });
+  } else {
+    List.findOne({ name: listName })
+      .then((foundList) => {
+        if (foundList) {
+          foundList.items.pull({ _id: checkedItemId });
+          return foundList.save();
+        }
+      })
+      .then(() => {
+        console.log("We have removed the item with id: " + checkedItemId + " from " + listName + " list");
+        res.redirect("/" + listName);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+});
 
-
+// Route for handling requests to a custom list page
+app.get("/:customListName", function(req, res) {
+  const customListName = _.capitalize(req.params.customListName);
+ 
+  // Check if a list with the given name exists in the database
+  List.findOne({name: customListName})
+    .then(foundList => {
+      if (!foundList) {
+        // If the list doesn't exist, create a new one with default items and save it to the database
+        console.log(customListName + " not found, creating new list...");
+        const list = new List({
+          name: customListName,
+          items: defaultItems
+        });
+        list.save()
+          .then(() => {
+            console.log("New list created and saved to the database.");
+            res.redirect("/" + customListName); // Redirect the user to the new list's page
+          })
+          .catch(err => {
+            console.log("Error saving new list to the database:", err);
+          });
+      } else {
+        // If the list exists, render its items to the list view
+        console.log("List already exists.");
+        res.render("list", {listTitle: foundList.name, newListItems: foundList.items});
+      }
+    })
+    .catch(err => {
+      console.log("Error finding list:", err);
+    });
+});
 
 app.get("/about", function(req, res){
   res.render("about");
