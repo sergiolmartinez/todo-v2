@@ -77,35 +77,7 @@ const defaultItems = [item1, item2, item3];
   app.get('/favicon.ico', function(req, res) {
     res.status(204);
     res.end();
-});
-
-//   app.get("/:customListName", async function(req, res) {
-//     const customListName = _.capitalize(req.params.customListName);
- 
-//     await List.findOne({ name: customListName })
-//       .then(async function (foundList) {
-//         if (!foundList) {
-//           //create new list
-//           const list = new List({
-//             name: customListName,
-//             items: defaultItems,
-//           });
-   
-//           await list.save();
-//           res.redirect("/" + customListName);
-//         } else {
-//           //show an existing list
-//           res.render("list", {
-//             listTitle: foundList.name,
-//             newListItems: foundList.items,
-//           });
-//         }
-//       })
-//       .catch(function (err) {
-//         console.log(err);
-//       });
-// });
-    
+}); 
 
 app.post("/", function(req, res){
  
@@ -210,8 +182,8 @@ app.get("/about", function(req, res){
   res.render("about");
 });
 
-app.listen(3000, function() {
-  console.log("Server started on port 3000");
+app.listen(process.env.PORT || 3000, function () {
+  console.log("Server is running...");
 });
 
 }
