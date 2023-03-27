@@ -1,10 +1,13 @@
 //jshint esversion:6
 
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const _ = require("lodash");
+const USER = process.env.DB_USERNAME;
+const PASS = process.env.DB_PASSWORD;
 
 mongoose.set('strictQuery', false);
 
@@ -22,8 +25,8 @@ app.use(express.static("public"));
 main().catch((err) => console.log(err));
  
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/todolistDB");
-  // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
+  // await mongoose.connect("mongodb://127.0.0.1:27017/todolistDB");
+  await mongoose.connect(`mongodb+srv://${USER}:${PASS}@cluster0.z0bjbyl.mongodb.net/todolistDB`)
   
 
 // Setting up MongoDB item schema
